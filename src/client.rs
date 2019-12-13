@@ -2,6 +2,7 @@ use reqwest::StatusCode;
 use serde::Serialize;
 use std::time::Duration;
 use tokio::time;
+use log::{error, info};
 
 #[derive(Clone)]
 pub struct Client {
@@ -15,6 +16,7 @@ struct CouchCredentials {
     password: String,
 }
 
+#[derive(Debug)]
 pub enum CouchAuthError {
     Unauthorized,
     InternalError(String),
@@ -59,7 +61,15 @@ impl Client {
                             .post(&format!("{}/_session", self.url))
                             .json(&credentials)
                             .send();
-                        println!("requested new couchdb token status {}", req.await.unwrap().status());
+                        match req.await {
+                            Ok(_) => {
+                                info!("CouchDB authentication token refreshed");
+                            },
+                            Err(why) => {
+                                error!("CouchDB authentication token couldn't be refreshed ({})", why);
+                            }
+                        }
+
                     }
                 });
                 Ok(())
